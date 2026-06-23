@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Claude internal tracking (not for public repo)
+.claude/
+
+# MNIST dataset cache
+trainer/.mnist-cache/
+
+# Environment & local config
+.env
+.env.local
+*.local
+
+# Editor
+.vscode/
+.idea/
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db

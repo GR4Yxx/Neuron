@@ -1,0 +1,10 @@
+export const ARCHITECTURE = [784, 128, 64, 10]
+export const ACTIVATION = 'relu'
+export const OUTPUT_ACTIVATION = 'softmax'
+export const LEARNING_RATE = 0.01
+export const FINETUNE_LEARNING_RATE = 0.001  // lower lr prevents catastrophic forgetting
+export const WEIGHTS_PATH = './public/weights.json'
+export const FINETUNE_EPOCHS = 25
+export const BRUSH_SIZE = 2          // NxN cells filled per stroke
+export const SNAPSHOT_INTERVAL = 5  // epochs between SNAPSHOT worker messages
+export const DISPLAY_NODES = [16, 32, 32, 10] // visible nodes per layer in NetDiagram

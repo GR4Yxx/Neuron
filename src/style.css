@@ -1,0 +1,35 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:        #06080f;
+  --surface:   #0c0e1a;
+  --border:    #161a2e;
+  --accent:    #00e5ff;
+  --accent-dim:#003d4d;
+  --negative:  #ff2060;
+  --text:      #c8d8f0;
+  --muted:     #6878a8;
+  --dim:       #1a1f35;
+  --canvas-bg: #ffffff;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button { font-family: inherit; }
