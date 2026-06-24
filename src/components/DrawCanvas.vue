@@ -12,7 +12,7 @@
       @touchmove.prevent="onTouchMove"
       @touchend="onUp"
     />
-    <div class="draw-controls">
+    <div class="draw-controls" v-if="mode !== 'dream'">
       <button class="btn-clear" @click="clear">Clear</button>
       <template v-if="mode === 'personalize'">
         <div class="label-picker">
@@ -34,21 +34,23 @@
 import { ref, onMounted, watch } from 'vue'
 import { BRUSH_SIZE } from '../../config.js'
 
-const GRID = 28
-const CELL = 14
+const GRID      = 28
+const CELL      = 14
 const CANVAS_PX = GRID * CELL
 
 const props = defineProps({
-  mode: { type: String, default: 'recognize' },
+  mode:        { type: String, default: 'recognize' },
+  dreamPixels: { type: Array,  default: null },
 })
 
-const emit = defineEmits(['recognize', 'train'])
+const emit = defineEmits(['recognize', 'train', 'clear'])
 
-const canvasEl = ref(null)
-const drawing = ref(false)
+const canvasEl     = ref(null)
+const drawing      = ref(false)
 const selectedLabel = ref(0)
-let ctx = null
-let grid = new Float32Array(GRID * GRID) // pixel values [0,1]
+let ctx  = null
+let grid = new Float32Array(GRID * GRID)
+let lastRecognizeMs = 0   // throttle live recognition
 
 onMounted(() => {
   ctx = canvasEl.value.getContext('2d')
@@ -57,6 +59,24 @@ onMounted(() => {
 
 watch(() => props.mode, (val) => {
   if (val === 'recognize') selectedLabel.value = 0
+})
+
+// Render externally-provided dream pixels onto the canvas
+watch(() => props.dreamPixels, (pixels) => {
+  if (!pixels || !ctx) return
+  // Dark background + cyan tint to match the app's cyberpunk color scheme
+  ctx.fillStyle = '#06080f'
+  ctx.fillRect(0, 0, CANVAS_PX, CANVAS_PX)
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      const v = pixels[r * GRID + c]
+      if (v > 0.06) {
+        const t = Math.pow(Math.min(v / 0.75, 1), 0.55)  // gamma lift — dim pixels stay visible
+        ctx.fillStyle = `rgb(0,${Math.round(t * 229)},${Math.round(t * 255)})`
+        ctx.fillRect(c * CELL, r * CELL, CELL, CELL)
+      }
+    }
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -71,20 +91,25 @@ function paint(x, y) {
   const { col, row } = cellAt(x, y)
   for (let dr = 0; dr < BRUSH_SIZE; dr++) {
     for (let dc = 0; dc < BRUSH_SIZE; dc++) {
-      const r = row + dr
-      const c = col + dc
-      if (r >= 0 && r < GRID && c >= 0 && c < GRID) {
-        grid[r * GRID + c] = 1
-      }
+      const r = row + dr, c = col + dc
+      if (r >= 0 && r < GRID && c >= 0 && c < GRID) grid[r * GRID + c] = 1
     }
   }
   redraw()
+
+  // Throttled live recognition — fires every 180ms while drawing
+  if (props.mode === 'recognize') {
+    const now = Date.now()
+    if (now - lastRecognizeMs > 180) {
+      lastRecognizeMs = now
+      emit('recognize', Array.from(grid))
+    }
+  }
 }
 
 function redraw() {
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, CANVAS_PX, CANVAS_PX)
-  ctx.fillStyle = '#111111'
   for (let r = 0; r < GRID; r++) {
     for (let c = 0; c < GRID; c++) {
       const v = grid[r * GRID + c]
@@ -100,19 +125,21 @@ function redraw() {
 function clear() {
   grid = new Float32Array(GRID * GRID)
   redraw()
+  emit('clear')
 }
 
 // ---------------------------------------------------------------------------
-// Mouse / touch events
+// Mouse / touch — locked in dream mode
 // ---------------------------------------------------------------------------
 
 function onDown(e) {
+  if (props.mode === 'dream') return
   drawing.value = true
   paint(e.offsetX, e.offsetY)
 }
 
 function onMove(e) {
-  if (!drawing.value) return
+  if (!drawing.value || props.mode === 'dream') return
   paint(e.offsetX, e.offsetY)
 }
 
@@ -123,6 +150,7 @@ function onUp() {
 }
 
 function onTouchStart(e) {
+  if (props.mode === 'dream') return
   drawing.value = true
   const rect = canvasEl.value.getBoundingClientRect()
   const t = e.touches[0]
@@ -130,7 +158,7 @@ function onTouchStart(e) {
 }
 
 function onTouchMove(e) {
-  if (!drawing.value) return
+  if (!drawing.value || props.mode === 'dream') return
   const rect = canvasEl.value.getBoundingClientRect()
   const t = e.touches[0]
   paint(t.clientX - rect.left, t.clientY - rect.top)
@@ -204,9 +232,7 @@ canvas {
   transition: opacity 0.15s;
 }
 
-.btn-train:hover {
-  opacity: 0.85;
-}
+.btn-train:hover { opacity: 0.85; }
 
 .label-picker {
   display: flex;
@@ -234,14 +260,39 @@ canvas {
   transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
 
-.digit-btn:hover {
-  border-color: var(--muted);
-  color: var(--text);
-}
+.digit-btn:hover { border-color: var(--muted); color: var(--text); }
 
 .digit-btn.active {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(0,229,255,0.08);
+}
+
+@media (max-width: 767px) {
+  .draw-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  canvas {
+    flex: 1;
+    min-height: 0;
+    width: auto;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 1;
+    align-self: center;
+  }
+
+  .draw-controls {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .digit-btn  { width: 22px; height: 22px; font-size: 10px; }
+  .label-hint { font-size: 9px; }
+  .btn-clear, .btn-train { padding: 5px 10px; font-size: 10px; }
 }
 </style>

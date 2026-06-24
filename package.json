@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "train": "node trainer/train.js"
+    "train": "node trainer/train.js",
+    "means": "node trainer/compute_means.js"
   },
   "dependencies": {
     "d3": "^7.9.0",

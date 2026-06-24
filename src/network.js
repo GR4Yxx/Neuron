@@ -113,6 +113,39 @@ export function step(weights, gradients, lr) {
   })
 }
 
+/**
+ * Gradient of cross-entropy loss w.r.t. the input pixels.
+ * Used for gradient ascent (dream mode) — returns a 784-length array.
+ * @param {number[][]} activations - From forward()
+ * @param {Array<{w: number[], b: number[]}>} weights
+ * @param {number} label - Target digit to maximise
+ * @returns {number[]} dinput — same shape as input
+ */
+export function inputGradient(activations, weights, label) {
+  const L = weights.length
+
+  // Same combined softmax + CE delta as backward()
+  let delta = activations[L].slice()
+  delta[label] -= 1
+
+  for (let l = L - 1; l >= 0; l--) {
+    const a_in   = activations[l]
+    const inSize  = a_in.length
+    const outSize = delta.length
+    const { w }   = weights[l]
+    const next    = new Array(inSize).fill(0)
+
+    for (let k = 0; k < inSize; k++) {
+      for (let j = 0; j < outSize; j++) next[k] += w[j * inSize + k] * delta[j]
+      // ReLU mask — skip for l=0 (input layer has no activation)
+      if (l > 0 && a_in[k] <= 0) next[k] = 0
+    }
+    delta = next
+  }
+
+  return delta
+}
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
