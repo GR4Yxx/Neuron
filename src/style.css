@@ -32,4 +32,16 @@ html, body {
   flex-direction: column;
 }
 
+@media (max-width: 767px) {
+  html, body {
+    height: auto;
+    overflow-y: auto;
+  }
+
+  #app {
+    height: auto;
+    min-height: 100dvh;
+  }
+}
+
 button { font-family: inherit; }

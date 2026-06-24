@@ -157,6 +157,7 @@ canvas {
   display: block;
   cursor: crosshair;
   width: 100%;
+  aspect-ratio: 1;
   image-rendering: pixelated;
 }
 

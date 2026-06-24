@@ -336,4 +336,38 @@ function onTrain({ input, label }) {
 }
 
 .btn-learn:hover { color: var(--accent); }
+
+
+/* ── Mobile layout ──────────────────────────────────── */
+@media (max-width: 767px) {
+  #layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  /* Network diagram on top */
+  .panel-left {
+    order: 1;
+    flex: none;
+    height: 280px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 8px;
+  }
+
+  /* Draw/predict panel below */
+  .panel-right {
+    order: 2;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 14px;
+    padding: 0 12px 20px;
+  }
+
+  /* Smaller digit on narrow screens */
+  .digit { font-size: 88px; }
+
+  .prediction { padding: 10px 0 4px; }
+}
 </style>
